@@ -77,7 +77,7 @@ print(iota)
 S_N_inverse = (alpha**(-1))*np.identity(2) + beta*(np.matmul(np.transpose(iota),iota)) # Eq. 3.54
 # print(S_N_inverse)
 
-m_N = np.matmul(beta*S_N_inverse,np.transpose(iota)*target[0])
+m_N = np.matmul(beta*S_N_inverse, np.transpose(iota)*target[0])
 print(m_N)
 
 S_N = np.linalg.inv(S_N_inverse) # updated variance
