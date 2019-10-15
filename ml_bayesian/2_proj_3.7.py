@@ -64,20 +64,22 @@ def plotPosterior(ax_number1, ax_number2, ax_number3, N_target):
     # Rearrange the mean vector such that the plotter can handle
     m_N = [m_N.item(0), m_N.item(1)]
 
+    plotMultivariate(ax_number2, m_N, S_N)
+
     # TODO determine likelihood and plot
     weights_ml = np.matmul(np.transpose(iota), iota)
     weights_ml = np.linalg.inv(weights_ml)
     weights_ml = np.matmul(weights_ml, np.transpose(iota))
     weights_ml = np.matmul(weights_ml, target_vector)
     weights_ml = [weights_ml.item(0), weights_ml.item(1)]
-    # print(weights_ml)
-
-    # plotMultivariate(ax_number1, weights_ml, S_0)
+    print(weights_ml)
 
     x_like = np.linspace(-1,1,100)
     ax_number1.plot(x_like, weights_ml[0] + weights_ml[1]*x_like)
 
-    # plotLines(ax_number3, N_target, m_N, S_N)
+    # plotMultivariate(ax_number1, weights_ml, S_0)
+
+    plotLines(ax_number3, N_target, m_N, S_N)
     return
 
 if __name__ == "__main__":
@@ -108,11 +110,11 @@ if __name__ == "__main__":
     ax1.set_ylim(bottom = -1, top = 1)
 
     # # Plot the prior and six lines from the estimated weights
-    # plotMultivariate(ax2, m_0, S_0)
-    # plotLines(ax3, 0, m_0, S_0)
+    plotMultivariate(ax2, m_0, S_0)
+    plotLines(ax3, 0, m_0, S_0)
     
     # Improve the model by using draws from the data
-    # plotPosterior(ax4, ax5, ax6, 1) # 1 data point
+    plotPosterior(ax4, ax5, ax6, 1) # 1 data point
     plotPosterior(ax7, ax8, ax9, 2) # 2 data points
     plotPosterior(ax10, ax11, ax12, 20) # 20 data points
 
