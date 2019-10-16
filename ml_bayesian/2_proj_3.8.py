@@ -2,7 +2,7 @@ import math
 import numpy as np
 from scipy.stats import multivariate_normal
 import scipy
-from mpl_toolkits.mplot3d import Axes3D
+# from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt    
 
 def basFunGauss(input_x, mu):
@@ -10,7 +10,7 @@ def basFunGauss(input_x, mu):
     phi_of_x = (1 / noise_sigma*2*np.pi**(1/2)) * np.exp((-((input_x-mu)**2)/(2*noise_sigma**2)))
     return phi_of_x
 
-def plotModel(ax_number, N):
+def plotModel(ax_number, N, title):
     # Plot original sine curve
     ax_number.plot(x_sin, y_sin, color='green')
 
@@ -57,6 +57,7 @@ def plotModel(ax_number, N):
     ax_number.fill_between(x_plot, low_list, high_list, color='mistyrose')
     ax_number.set_xlabel('x')
     ax_number.set_ylabel('t')
+    ax_number.set_title(title)
 
     # Plot the draw of data points
     for n in range(N):
@@ -94,9 +95,9 @@ if __name__ == "__main__":
     ax1.set_ylim(bottom = -1.2, top = 1.2)
 
     # Run the model with seperate draws of data
-    plotModel(ax1, 1)
-    plotModel(ax2, 2)
-    plotModel(ax3, 4)
-    plotModel(ax4, 25)
+    plotModel(ax1, 1, "one data point")
+    plotModel(ax2, 2, "two data points")
+    plotModel(ax3, 4, "four data points")
+    plotModel(ax4, 25, "25 data points")
 
     plt.show()
