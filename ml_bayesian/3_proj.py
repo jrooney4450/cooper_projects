@@ -9,7 +9,7 @@ def sigmoid(a):
     return (1 / (1 + np.exp(-a)))
 
 def logisticRegression(N, data, targets):
-
+    return
 
 
 def gaussianGenerative(N, data, targets):
