@@ -2,21 +2,21 @@ close all; clear; clc;
 
 % choose one of the three paths below
 
-path = pathLaneChange();
-xmin = 0;
-xmax = 500;
-ymin = -30;
-ymax = 30;
-initialOrientation = 0;
+% path = pathLaneChange();
+% xmin = 0;
+% xmax = 500;
+% ymin = -30;
+% ymax = 30;
+% initialOrientation = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% path = pathFigureEight();
-% xmin = -10;
-% xmax = 250;
-% ymin = -10;
-% ymax = 130;
-% initialOrientation = -pi/2;
+path = pathFigureEight();
+xmin = -10;
+xmax = 250;
+ymin = -10;
+ymax = 130;
+initialOrientation = -pi/2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -60,9 +60,12 @@ while( distanceToGoal > goalRadius )
     
     % Compute the controller outputs, i.e., the inputs to the robot
     [v, omega] = controller(robotCurrentPose);
-    
+%     disp(robotCurrentPose);
+%     disp([v omega]);    
+
     % Get the robot's velocity using controller inputs
     vel = derivative(robot, robotCurrentPose, [v omega]);
+    disp(vel);
     
     station_prev = sqrt(robotCurrentPose(1)^2 + robotCurrentPose(2)^2);
     
@@ -70,7 +73,7 @@ while( distanceToGoal > goalRadius )
     robotCurrentPose = robotCurrentPose + vel*sampleTime; 
     
     station = station + (sqrt(robotCurrentPose(1)^2 + robotCurrentPose(2)^2) - station_prev);
-    disp(station);
+%     disp(station);
     
     % Find closest waypoint
     
