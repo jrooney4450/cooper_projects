@@ -145,23 +145,41 @@ if __name__ == "__main__":
     # y = np.matmul(w.T, x) # what is x here?
 
     # Plot the boundary between the classes
-    x = np.linspace(-3,5,100)
-    # x2 = np.linspace(-3,5,100)
+    x = np.linspace(-5,6,100)
     fig = plt.figure(1)
-    plt.plot(x, unimodal_w[1,0]*x + unimodal_w[2,0]*x + unimodal_w[0,0], color = 'g')
+    print(unimodal_w)
+    plt.plot(x, (-unimodal_w[1,0]*x - unimodal_w[0,0]) / unimodal_w[2,0], color = 'g')
 
-    # Classify a random point based on the training set
-    point = np.array([[1.5],[0]])
+    # # Classify a random point based on the training set
+    # point = np.array([[1.1],[0]])
     # print(point[0,0])
-    fig = plt.figure(1)
-    plt.scatter(point[0,0], point[1,0], color = 'orange')
-    classify = sigmoid(np.matmul(unimodal_w[1:,0].T, point) + unimodal_w[0,0])
-    threshold = 0.5
-    if classify[0] >= threshold:
-        classify = 1
-    else:
-        classify = 0
+    # fig = plt.figure(1)
+    # plt.scatter(point[0,0], point[1,0], color = 'orange')
+    # classify = sigmoid(np.matmul(unimodal_w[1:,0].T, point) + unimodal_w[0,0])
+    # threshold = 0.5
+    # if classify[0] >= threshold:
+    #     classify = 1
+    # else:
+    #     classify = 0
     # print("The point ({}, {}) is part of class {}".format(point[0,0], point[1,0], classify))
+
+    threshold = 0.5
+    success = 0
+    failure = 0
+    counter = -1
+    for target in np.nditer(unimodal_targets):
+        counter += 1
+        p_class = sigmoid(np.matmul(unimodal_w[1:,0].T, unimodal_data[:,counter]) + unimodal_w[0,0])
+        if p_class >= threshold:
+            target_guess = 1
+        else:
+            target_guess = 0
+        if target_guess == unimodal_targets[:,counter]:
+            success += 1
+        else:
+            failure += 1
+    
+    print("The percentage of successfully {} classified data is: {}".format('unimodal', success / (success + failure)))
 
     # logisticRegression()
 
@@ -184,6 +202,29 @@ if __name__ == "__main__":
 
     circles_w = getWeights(circles_data, circles_targets)
 
+    # Plot the boundary between the classes
+    fig = plt.figure(2)
+    print(circles_w)
+    plt.plot(x, (-circles_w[1,0]*x - circles_w[0,0]) / circles_w[2,0], color = 'g')
+
+    threshold = 0.5
+    success = 0
+    failure = 0
+    counter = -1
+    for target in np.nditer(circles_targets):
+        counter += 1
+        p_class = sigmoid(np.matmul(circles_w[1:,0].T, circles_data[:,counter]) + circles_w[0,0])
+        if p_class >= threshold:
+            target_guess = 1
+        else:
+            target_guess = 0
+        if target_guess == circles_targets[:,counter]:
+            success += 1
+        else:
+            failure += 1
+    
+    print("The percentage of successfully {} classified data is: {}".format('circles', success / (success + failure)))
+
     # # Add additional basis function for circles data x3 = x1^2 + x2^3
     # circles_phi = np.zeros((1, N_circles, 1))
     # counter = -1
@@ -195,4 +236,4 @@ if __name__ == "__main__":
     # print(circles_phi.shape)
     # print(circles_phi[:,1])
 
-    # plt.show()
+    plt.show()

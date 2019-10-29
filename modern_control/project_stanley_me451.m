@@ -35,11 +35,11 @@ robotCurrentPose = [robotInitialLocation initialOrientation]';
 
 robot = differentialDriveKinematics("TrackWidth", 1, "VehicleInputs", "VehicleSpeedHeadingRate");
 
-controller = controllerPurePursuit;
-controller.Waypoints = path;
-controller.DesiredLinearVelocity = 15;
-controller.MaxAngularVelocity = 5;
-controller.LookaheadDistance = 3;
+% controller = controllerPurePursuit;
+% controller.Waypoints = path;
+% controller.DesiredLinearVelocity = 15;
+% controller.MaxAngularVelocity = 5;
+% controller.LookaheadDistance = 3;
 
 goalRadius = 1;
 distanceToGoal = norm(robotInitialLocation - robotGoal);
