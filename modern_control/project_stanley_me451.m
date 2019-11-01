@@ -1,22 +1,22 @@
 close all; clear; clc;
 
-% choose one of the three paths below
-
-path = pathLaneChange();
-xmin = 0;
-xmax = 500;
-ymin = -30;
-ymax = 30;
-initialOrientation = 0;
+% % choose one of the three paths below
+% 
+% path = pathLaneChange();
+% xmin = 0;
+% xmax = 500;
+% ymin = -30;
+% ymax = 30;
+% initialOrientation = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% path = pathFigureEight();
-% xmin = -10;
-% xmax = 250;
-% ymin = -10;
-% ymax = 130;
-% initialOrientation = -pi/2;
+path = pathFigureEight();
+xmin = -10;
+xmax = 250;
+ymin = -10;
+ymax = 130;
+initialOrientation = -pi/2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 

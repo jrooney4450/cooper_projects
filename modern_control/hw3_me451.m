@@ -54,9 +54,14 @@ figure
 % Determine vehicle frame size to most closely represent vehicle with plotTransforms
 frameSize = robot.TrackWidth/0.2;
 
-station = 0;
+station = zeros(1,1);
+crossTrackError = zeros(1,1);
+counter = 0;
+pathCounter = 0;
 
 while( distanceToGoal > goalRadius )
+    counter = counter + 1;
+    pathCounter = pathCounter + 1;
     
     % Compute the controller outputs, i.e., the inputs to the robot
     [v, omega] = controller(robotCurrentPose);
@@ -65,17 +70,23 @@ while( distanceToGoal > goalRadius )
 
     % Get the robot's velocity using controller inputs
     vel = derivative(robot, robotCurrentPose, [v omega]);
-    disp(vel);
+%     disp(vel);
     
-    station_prev = sqrt(robotCurrentPose(1)^2 + robotCurrentPose(2)^2);
+    prevPose = robotCurrentPose;
     
     % Update the current pose
     robotCurrentPose = robotCurrentPose + vel*sampleTime; 
     
-    station = station + (sqrt(robotCurrentPose(1)^2 + robotCurrentPose(2)^2) - station_prev);
-%     disp(station);
+    stationAdd = [station(counter) + sqrt((robotCurrentPose(1) - prevPose(1))^2 + (robotCurrentPose(2) - prevPose(2))^2)];
+    station = [station stationAdd];
+    disp(station);
     
-    % Find closest waypoint
+    % Calculate cross-track error
+    
+%     pointBefore = path(counter,:);
+%     pointAfter = path(counter+1,:);
+%     pathSlope = (pointBofore(2) - pointAfter(2)) / (pointBefore(1) - pointAfter(1));
+%     if 
     
     
     % Re-compute the distance to the goal
@@ -101,6 +112,8 @@ while( distanceToGoal > goalRadius )
     waitfor(vizRate);
 end
 
+plot(station, crossTrackError);
+
 function path = pathLaneChange()
     % Lane change path
     laneChangeAngle = deg2rad(10); % Angle at which to take the lane change
@@ -119,8 +132,8 @@ function path = pathFigureEight()
     r = 60;
     x = 60;
     y = 60;
-    segmentLen = 10; % Set the number of waypoints along each semi-circle
-    offset = 0.1; % Sets an offset between semi-circle transitions
+    segmentLen = 50; % Set the number of waypoints along each semi-circle
+    offset = 0.01; % Sets an offset between semi-circle transitions
 
     % Plot and get path for first semi circle
     th = -pi:pi/segmentLen:0-offset;
