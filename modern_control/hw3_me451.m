@@ -1,22 +1,22 @@
 close all; clear; clc;
 
-% choose one of the three paths below
+% Choose one of the three paths below
 
-path = pathLaneChange();
-xmin = 0;
-xmax = 100;
-ymin = -15;
-ymax = 15;
-initialOrientation = 0;
+% path = pathLaneChange();
+% xmin = 0;
+% xmax = 100;
+% ymin = -15;
+% ymax = 15;
+% initialOrientation = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% path = pathFigureEight();
-% xmin = -10;
-% xmax = 250;
-% ymin = -10;
-% ymax = 130;
-% initialOrientation = -pi/2;
+path = pathFigureEight();
+xmin = -10;
+xmax = 250;
+ymin = -10;
+ymax = 130;
+initialOrientation = -pi/2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -37,7 +37,7 @@ robot = differentialDriveKinematics("TrackWidth", 1, "VehicleInputs", "VehicleSp
 
 controller = controllerPurePursuit;
 controller.Waypoints = path;
-controller.DesiredLinearVelocity = 5;
+controller.DesiredLinearVelocity = 15;
 controller.MaxAngularVelocity = 3;
 controller.LookaheadDistance = 3;
 
@@ -69,9 +69,123 @@ crossTrackError = 0;
 % Point counter initialization
 counter = 1;
 
+%% MATLAB pure pursuit controller
+
+% while( distanceToGoal > goalRadius )
+%     % Compute the controller outputs, i.e., the inputs to the robot
+%     [v, omega] = controller(robotCurrentPose);
+% 
+%     % Get the robot's velocity using controller inputs
+%     vel = derivative(robot, robotCurrentPose, [v omega]);
+%     
+%     prevPose = robotCurrentPose;
+%     
+%     % Update the current pose
+%     robotCurrentPose = robotCurrentPose + vel*sampleTime; 
+%     
+%     % Float form of station
+%     station = station + sqrt((robotCurrentPose(1) - prevPose(1))^2 + (robotCurrentPose(2) - prevPose(2))^2);
+%     
+% % %     Array form of station
+% %     stationAdd = [station(counter) + sqrt((robotCurrentPose(1) - prevPose(1))^2 + (robotCurrentPose(2) - prevPose(2))^2)];
+% %     station = [station stationAdd];
+%     
+%     % Calculate cross-track error
+%     pointBefore = path(counter,:);
+%     pointAfter = path(counter+1,:);
+%     pointTwo = path(counter+2,:);
+%     
+%     % Determine which point is closer
+%     % Distance from robot current state to previous point on path
+%     distanceBefore = sqrt((robotCurrentPose(1) - pointBefore(1))^2 + (robotCurrentPose(2) - pointBefore(2))^2);
+%     
+%     % Distance from robot current state to two points ahead
+%     distanceTwo = sqrt((robotCurrentPose(1) - pointTwo(1))^2 + (robotCurrentPose(2) - pointTwo(2))^2);
+%     
+%     % Once distance to two points ahead becomes larger than the distance to
+%     % the previous point, increment in the path points
+%     if distanceTwo <= distanceBefore 
+%         counter = counter + 1;
+%         pointBefore = path(counter,:);
+%         pointAfter = path(counter+1,:);
+%         pointTwo = path(counter+2,:);
+%         disp("the closest point changed");
+%     end
+%     
+%     % Find the distance from the robotState two the line formed between the
+%     % two most recent path points
+%     pathSlope = (pointBefore(2) - pointAfter(2)) / (pointBefore(1) - pointAfter(1));
+%     pathIntersect = pointBefore(2) - (pathSlope * pointBefore(1));
+% %     robotSlope = tan(robotCurrentPose(3));
+% %     robotIntersect = robotCurrentPose(2) - (robotSlope * robotCurrentPose(1));
+% %     robotSlopePerp = -1/robotSlope;
+% %     xIntersect = pathIntersect - robotIntersect / (robotSlopePerp - pathSlope);
+% %     yIntersect = robotSlope*xIntersect + robotSlope;
+% 
+%     % Find the equation of the line in Hesse normal form
+%     a = -pathSlope;
+%     b = 1;
+%     c = -pathIntersect;
+% %     den = (c/abs(c)) * sqrt(a^2 + b^2);
+% %     a = a/den;
+% %     b = b/den;
+% %     c = c/den;
+%     x0 = robotCurrentPose(1);
+%     y0 = robotCurrentPose(2);
+%     crossTrackError = (abs(a*x0 + b*y0 + c)) / sqrt(a^2 + b^2);
+%     
+% %     % Float form of cross-track error
+% %     crossTrackError = sqrt((robotCurrentPose(1) - xIntersect)^2 + (robotCurrentPose(2) - yIntersect)^2);
+%     
+% %     % Array form of cross-track error
+% %     crossTrackErrorAdd = [sqrt((robotCurrentPose(1) - xIntersect)^2 + (robotCurrentPose(2) - yIntersect)^2)];
+% %     crossTrackError = [crossTrackError crossTrackErrorAdd];
+%     
+%     % Re-compute the distance to the goal
+%     distanceToGoal = norm(robotCurrentPose(1:2) - robotGoal(:));
+%     
+%     % Update the plot
+%     hold off
+%     
+%     % Plot path each instance so that it stays persistent while robot mesh
+%     % moves
+%     figure(1)
+%     plot(path(:,1), path(:,2),"k--d")
+%     hold all
+%     
+%     % Plot the path of the robot as a set of transforms
+%     plotTrVec = [robotCurrentPose(1:2); 0];
+%     plotRot = axang2quat([0 0 1 robotCurrentPose(3)]);
+%     plotTransforms(plotTrVec', plotRot, "MeshFilePath", "groundvehicle.stl", "Parent", gca, "View","2D", "FrameSize", frameSize);
+% %     light;
+% 
+%     xlim([xmin xmax])
+%     ylim([ymin ymax])
+%     
+% %     % Plot heading versus cross track error
+% %     figure(2)
+% %     hold all
+% %     plot(station(counter), crossTrackError(counter), '-x');
+% 
+%     figure(2)
+%     hold all
+%     plot(station, crossTrackError, '.');
+%     
+%     waitfor(vizRate);
+% end
+
+%% Custom stanley controller
+
+kp = 5; % Proportional gain
+steeringAngle = 0; 
+steeringAnglePrev = 0;
+v = 1;
+
 while( distanceToGoal > goalRadius )
     % Compute the controller outputs, i.e., the inputs to the robot
-    [v, omega] = controller(robotCurrentPose);
+    omega = (steeringAngle - steeringAnglePrev) / sampleTime;
+    
+%     [v, omega] = controller(robotCurrentPose);
 
     % Get the robot's velocity using controller inputs
     vel = derivative(robot, robotCurrentPose, [v omega]);
@@ -83,10 +197,6 @@ while( distanceToGoal > goalRadius )
     
     % Float form of station
     station = station + sqrt((robotCurrentPose(1) - prevPose(1))^2 + (robotCurrentPose(2) - prevPose(2))^2);
-    
-% %     Array form of station
-%     stationAdd = [station(counter) + sqrt((robotCurrentPose(1) - prevPose(1))^2 + (robotCurrentPose(2) - prevPose(2))^2)];
-%     station = [station stationAdd];
     
     % Calculate cross-track error
     pointBefore = path(counter,:);
@@ -112,32 +222,38 @@ while( distanceToGoal > goalRadius )
     
     % Find the distance from the robotState two the line formed between the
     % two most recent path points
-    pathSlope = (pointBefore(2) - pointAfter(2)) / (pointBefore(1) - pointAfter(1));
+    pathSlopeNum = pointBefore(2) - pointAfter(2);
+    pathSlopeDen = pointBefore(1) - pointAfter(1);
+    pathSlope = pathSlopeNum / pathSlopeDen;
     pathIntersect = pointBefore(2) - (pathSlope * pointBefore(1));
-%     robotSlope = tan(robotCurrentPose(3));
-%     robotIntersect = robotCurrentPose(2) - (robotSlope * robotCurrentPose(1));
-%     robotSlopePerp = -1/robotSlope;
-%     xIntersect = pathIntersect - robotIntersect / (robotSlopePerp - pathSlope);
-%     yIntersect = robotSlope*xIntersect + robotSlope;
 
     % Find the equation of the line in Hesse normal form
     a = -pathSlope;
     b = 1;
     c = -pathIntersect;
 %     den = (c/abs(c)) * sqrt(a^2 + b^2);
-%     a = a/den;
+%     aTemp = a/den;
+%     pathHeading = acos(aTemp)
 %     b = b/den;
 %     c = c/den;
     x0 = robotCurrentPose(1);
     y0 = robotCurrentPose(2);
     crossTrackError = (abs(a*x0 + b*y0 + c)) / sqrt(a^2 + b^2);
-    
-%     % Float form of cross-track error
-%     crossTrackError = sqrt((robotCurrentPose(1) - xIntersect)^2 + (robotCurrentPose(2) - yIntersect)^2);
-    
-%     % Array form of cross-track error
-%     crossTrackErrorAdd = [sqrt((robotCurrentPose(1) - xIntersect)^2 + (robotCurrentPose(2) - yIntersect)^2)];
-%     crossTrackError = [crossTrackError crossTrackErrorAdd];
+%     if pointBefore(1) == pointAfter(1)
+%         pathHeading = 0
+%     else
+%         pathHeading = pi/2*atan2(pathSlopeNum, pathSlopeDen)
+%     end
+    pathHeading = mod(pi + atan2(pathSlopeNum, pathSlopeDen), 2*pi);
+    headingError = robotCurrentPose(3) - pathHeading
+    if headingError < -5
+        disp("Inside heading error")
+        headingError = 2*pi + headingError;
+%         crossTrackError = -crossTrackError;
+    end
+        
+    steeringAnglePrev = steeringAngle;
+    steeringAngle = headingError + atan2(kp*crossTrackError, v);
     
     % Re-compute the distance to the goal
     distanceToGoal = norm(robotCurrentPose(1:2) - robotGoal(:));
@@ -159,11 +275,6 @@ while( distanceToGoal > goalRadius )
 
     xlim([xmin xmax])
     ylim([ymin ymax])
-    
-%     % Plot heading versus cross track error
-%     figure(2)
-%     hold all
-%     plot(station(counter), crossTrackError(counter), '-x');
 
     figure(2)
     hold all
@@ -172,8 +283,7 @@ while( distanceToGoal > goalRadius )
     waitfor(vizRate);
 end
 
-% figure(3)
-% plot(station, crossTrackError);
+%% Functions for path generation
 
 function path = pathLaneChange()
     % Lane change path
@@ -214,7 +324,7 @@ function path = pathFigureEight()
     segmentLen = 50; % Set the number of waypoints along each semi-circle
     offset = 0.01; % Sets an offset between semi-circle transitions
 
-    % Plot and get path for first semi circle
+    % Generate path for first semi circle
     th = -pi:pi/segmentLen:0-offset;
     xunit = r * cos(th) + x;
     yunit = r * sin(th) + y;
@@ -224,7 +334,7 @@ function path = pathFigureEight()
     end
     plot(xunit, yunit);
 
-    % Plot and get path for second semi circle
+    % Generate path for second semi circle
     x = x + 2*r; % Move x to the origin of an adjacent semi-circle
     th = pi+offset:pi/segmentLen:2*pi-offset;
     xunit = r * cos(th) + x;
@@ -234,7 +344,7 @@ function path = pathFigureEight()
         path = cat(1, path, addMe); % add segment to total path 
     end
 
-    % Plot and get path for third semi circle
+    % Generate path for third semi circle
     th = 0+offset:pi/segmentLen:pi-offset;
     xunit = r * cos(th) + x;
     yunit = r * -sin(th) + y;
@@ -243,7 +353,7 @@ function path = pathFigureEight()
         path = cat(1, path, addMe); % add segment to total path 
     end
 
-    % Plot and get path for fourth semi circle
+    % Generate path for fourth semi circle
     x = x - 2*r; % Move x back to the origin of the first semi-circle
     th = 0+offset:pi/segmentLen:pi; % 
     xunit = r * cos(th) + x;
