@@ -957,7 +957,7 @@ end
 figure(2)
 hold all
 plot(stationVect, crossTrackErrorVect, 'r');
-legend("k = 8", "k = 12", "k = 16", "k = 20");
+legend("k = 1", "k = 2", "k = 4", "k = 8");
 
 %% Functions for path generation
 
