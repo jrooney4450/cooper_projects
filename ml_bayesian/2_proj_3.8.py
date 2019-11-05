@@ -2,7 +2,6 @@ import math
 import numpy as np
 from scipy.stats import multivariate_normal
 import scipy
-# from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt    
 
 def basFunGauss(input_x, mu):
