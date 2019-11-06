@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 import csv
 import sklearn
+from sklearn import svm
 
 def sigmoid(a):
     return (1 / (1 + np.exp(-a)))
@@ -185,6 +186,39 @@ def plotROC(data, targets, weights, w0, label, color):
     plt.plot(false_pos_rate, true_pos_rate, color = color, label = label)
     plt.legend(loc='lower right')
 
+# class SVM:
+#     def fit(self, X, y):
+#         n_samples, n_features = X.shape # P = X^T X
+#         K = np.zeros((n_samples, n_samples))
+#         for i in range(n_samples):
+#             for j in range(n_samples):
+#                 K[i,j] = np.dot(X[i], X[j])P = cvxopt.matrix(np.outer(y, y) * K)# q = -1 (1xN)
+#         q = cvxopt.matrix(np.ones(n_samples) * -1)# A = y^T 
+#         A = cvxopt.matrix(y, (1, n_samples))# b = 0 
+#         b = cvxopt.matrix(0.0)# -1 (NxN)
+#         G = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))# 0 (1xN)
+#         h = cvxopt.matrix(np.zeros(n_samples))solution = cvxopt.solvers.qp(P, q, G, h, A, b)# Lagrange multipliers
+#         a = np.ravel(solution['x'])# Lagrange have non zero lagrange multipliers
+#         sv = a > 1e-5
+#         ind = np.arange(len(a))[sv]
+#         self.a = a[sv]
+#         self.sv = X[sv]
+#         self.sv_y = y[sv]# Intercept
+#         self.b = 0
+#         for n in range(len(self.a)):
+#             self.b += self.sv_y[n]
+#             self.b -= np.sum(self.a * self.sv_y * K[ind[n], sv])
+#         self.b /= len(self.a)# Weights
+#         self.w = np.zeros(n_features)
+#         for n in range(len(self.a)):
+#             self.w += self.a[n] * self.sv_y[n] * self.sv[n]
+        
+#     def project(self, X):
+#         return np.dot(X, self.w) + self.b
+        
+#     def predict(self, X):
+#         return np.sign(self.project(X))
+
 
 if __name__ == "__main__":
 
@@ -207,27 +241,67 @@ if __name__ == "__main__":
         counter += 1
         circles_phi[0,counter] = (circles_data[0,counter]**2 + circles_data[1,counter]**2)
     circles_data = np.vstack((circles_data, circles_phi))
-    # print(circles_data.shape)
+    print(circles_data.shape)
 
-    fig = plt.figure(1)
-    plt.xlim(-0.01, 1)
-    plt.ylim(0.0, 1.01)
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('ROC Plots')
+    # fig = plt.figure(1)
+    # plt.xlim(-0.01, 1)
+    # plt.ylim(0.0, 1.01)
+    # plt.xlabel('False Positive Rate')
+    # plt.ylabel('True Positive Rate')
+    # plt.title('ROC Plots')
 
-    # Do the things on the circles data
-    P_C1 = 0.5
+    # # Do the things on the circles data
+    # P_C1 = 0.5
 
-    circles_w = getWeights(circles_data, circles_targets, P_C1)
-    circles_w0 = circles_w[-1,0]
-    classify(circles_data, circles_targets, circles_w, circles_w0, 0.5, 'circles data using gaussian generative')
-    plotROC(circles_data, circles_targets, circles_w, circles_w0, 'circles data gaussian generative', 'r')
+    # circles_w = getWeights(circles_data, circles_targets, P_C1)
+    # circles_w0 = circles_w[-1,0]
+    # classify(circles_data, circles_targets, circles_w, circles_w0, 0.5, 'circles data using gaussian generative')
+    # plotROC(circles_data, circles_targets, circles_w, circles_w0, 'circles data gaussian generative', 'r')
 
-    # w = np.ones((3,1))
-    circles_w_irls = getWeightsIRLS(circles_w, circles_data, circles_targets)
-    classify(circles_data, circles_targets, circles_w_irls, circles_w0, 0.5, 'circles data using logistic regression')
-    plotROC(circles_data, circles_targets, circles_w_irls, circles_w0, 'circles data logistic regression', 'y')
+    # # w = np.ones((3,1))
+    # circles_w_irls = getWeightsIRLS(circles_w, circles_data, circles_targets)
+    # classify(circles_data, circles_targets, circles_w_irls, circles_w0, 0.5, 'circles data using logistic regression')
+    # plotROC(circles_data, circles_targets, circles_w_irls, circles_w0, 'circles data logistic regression', 'y')
+
+    # Remove third basis function to test SVM
+    circles_data = circles_data[:-1,:]
+    print(circles_data.shape)
+
+    # Reformat data to be compatible with SVM
+    circles_data = circles_data.T
+    print(circles_data.shape)
+    circles_targets = circles_targets[:,0]
+    print(circles_targets.shape)
+
+    # Dvide the data for SVM
+    train = int(0.8*N) 
+    tune = train + int(0.1*N)
+    test = tune + int(0.1*N)
+
+    X_tr = circles_data[:train,:]
+    X_tu = circles_data[train:tune,:]
+    X_te = circles_data[tune:test,:]
+
+    y_tr = circles_targets[:train]
+    y_tu = circles_targets[train:tune]
+    y_te = circles_targets[tune:test]
+
+    # Fit the model with the training data
+    clf = svm.SVC(kernel='rbf', C=100, gamma=0.1)
+    clf.fit(X_tr, y_tr)
+    # print(clf.predict([circles_data[0,:]])[0])
+    # print(clf.predict([[2., 2.]])[0])
+    
+    # Report the success of the fit on the test data
+    success = 0
+    failure = 0
+    counter = -1
+    for target in range(len(y_te)):
+        if clf.predict([X_te[counter,:]])[0] == y_te[counter]:
+            success += 1
+        else:
+            failure += 1
+    print("The percentage of successfully classified {} is: {}".format('Circles SVM', success / (success + failure)))
 
     ##########################################################################################
     ################################## Divorce!!! ############################################
@@ -251,15 +325,36 @@ if __name__ == "__main__":
     N = divorce_targets.shape[0]
     # print(N)
 
-    P_C1 = 0.5
-    divorce_w = getWeights(divorce_data, divorce_targets, P_C1)
-    divorce_w0 = divorce_w[-1,0]
-    classify(divorce_data, divorce_targets, divorce_w, divorce_w0, 0.5, 'divorce data using gaussian generative')
-    plotROC(divorce_data, divorce_targets, divorce_w, divorce_w0, 'divorce data gaussian generative', 'b')
-    
-    # # Use logistic regression with IRLS to recompute the weights. Feed ML estimate of the weights for the best initial condiditions.
-    divorce_w_irls = getWeightsIRLS(divorce_w, divorce_data, divorce_targets)
-    classify(divorce_data, divorce_targets, divorce_w_irls, divorce_w0, 0.5, 'divorce data using logistic regression')
-    plotROC(divorce_data, divorce_targets, divorce_w_irls, divorce_w0, 'divorce data logistic regression', 'g')
+    # # Do the things with the divorce data
+    # P_C1 = 0.5
 
-    plt.show()
+    # divorce_w = getWeights(divorce_data, divorce_targets, P_C1)
+    # divorce_w0 = divorce_w[-1,0]
+    # classify(divorce_data, divorce_targets, divorce_w, divorce_w0, 0.5, 'divorce data using gaussian generative')
+    # plotROC(divorce_data, divorce_targets, divorce_w, divorce_w0, 'divorce data gaussian generative', 'b')
+    
+    # # # Use logistic regression with IRLS to recompute the weights. Feed ML estimate of the weights for the best initial condiditions.
+    # divorce_w_irls = getWeightsIRLS(divorce_w, divorce_data, divorce_targets)
+    # classify(divorce_data, divorce_targets, divorce_w_irls, divorce_w0, 0.5, 'divorce data using logistic regression')
+    # plotROC(divorce_data, divorce_targets, divorce_w_irls, divorce_w0, 'divorce data logistic regression', 'g')
+
+    # Reformat data to be compatible with SVM
+    divorce_data = divorce_data.T
+    print(divorce_data.shape)
+    divorce_targets = divorce_targets[:,0]
+    print(divorce_targets.shape)
+    divorce_svm = svm.SVC(kernel='rbf', C=100, gamma=0.1)
+    divorce_svm.fit(divorce_data, divorce_targets)
+    
+    # Find amount of successful classifications
+    success = 0
+    failure = 0
+    counter = -1
+    for target in np.nditer(divorce_targets):
+        if divorce_svm.predict([divorce_data[counter,:]])[0] == divorce_targets[counter]:
+            success += 1
+        else:
+            failure += 1
+    print("The percentage of successfully classified {} is: {}".format('Divorce SVM', success / (success + failure)))
+
+    # # plt.show()
