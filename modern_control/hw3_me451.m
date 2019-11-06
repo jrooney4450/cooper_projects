@@ -481,7 +481,7 @@ ylabel("y (m)")
 
 figure(2)
 hold all
-title("Stanley at 5m/s on figure Eight")
+title("Stanley at 10m/s on Lane Chnage")
 xlabel("Station (m)")
 ylabel("Cross Track Error (m)")
 hold off
@@ -498,7 +498,7 @@ steeringAngle = 0;
 steeringAnglePrev = 0;
 plotCounter = 1;
 % omegaCap = 3; % Limit the amout of turning as the system cannot instantaneously respond
-omegaCap = 0.2; % Lane change was set to this amount
+omegaCap = 0.1; % Lane change was set to this amount
 
 kp = 1; % Proportional gain
 v = 10;
