@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 import csv
 import sklearn
-from sklearn import svm
+from sklearn import svm, metrics
+from sklearn.model_selection import GridSearchCV
 import random
 
 def sigmoid(a):
@@ -155,52 +156,75 @@ def plotROC(data, targets, weights, w0, label, color):
     plt.plot(false_pos_rate, true_pos_rate, color = color, label = label)
     plt.legend(loc='lower right')
 
-def classifySVM(data, targets, ratio, C, gamma, label, color):
+def classifySVM(data, targets, label, color):
     # Randomly divide the data for SVM
     M = data.shape[1]
-    # print(M)
     X_tr = np.zeros((1,M))
     y_tr = np.zeros((1,))
+    X_tu = np.zeros((1,M))
+    y_tu = np.zeros((1,))
     X_te = np.zeros((1,M))
     y_te = np.zeros((1,))
     for i in range(len(targets)):
-        if random.random() < ratio:
+        rand = random.random()
+        if rand < 0.8:
             X_tr = np.vstack((X_tr, data[i,:]))
             y_tr = np.hstack((y_tr, targets[i]))
-        else:
+        elif rand >= 0.8 and rand < 0.9: # Hold out data set
+            X_tu = np.vstack((X_tu, data[i,:]))
+            y_tu = np.hstack((y_tu, targets[i]))
+        else: # Final test data set
             X_te = np.vstack((X_te, data[i,:]))
             y_te = np.hstack((y_te, targets[i]))
     # Remove the first row which is zeros from construction
     X_tr = X_tr[1:,:]
     y_tr = y_tr[1:]
+    X_tu = X_tu[1:,:]
+    y_tu = y_tu[1:]
     X_te = X_te[1:,:]
     y_te = y_te[1:]
 
-    # Fit the model with the training data
-    clf = svm.SVC(kernel='rbf', C=C, gamma=gamma, probability=True)
-    clf.fit(X_tr, y_tr)
-    
-    # Report the success of the fit on the test data
-    success = 0
-    failure = 0
-    counter = -1
-    for target in range(len(y_te)):
-        counter += 1
-        if clf.predict([X_te[counter,:]])[0] == y_te[counter]:
-            success += 1
-        else:
-            failure += 1
-    print("The percentage of successfully classified {} is: {}".format(label, success / (success + failure)))
-    
-    # Find the probability of the classfication
-    prob = clf.predict_proba(X_te)
+    # Implement grid search algorithm
+    C_list = [2**(-5), 2**(-3), 2**(-1), 2**(1), 2**(3), 2**(5), 2**(7), \
+        2**(9), 2**(11), 2**(13), 2**(15)]
+    gamma_list = [2**(-15), 2**(-13), 2**(-11), 2**(-9), 2**(-7), 2**(-5), \
+        2**(-3), 2**(-1), 2**(1), 2**(3)]
 
+    # Serach for the model parameters that result in the highest accuracy predictions on the tuning dataset 
+    # return the best gamma and C values
+    accuracy_high = 0
+    accuracy_curr = 0
+    best_gamma = None
+    best_C = None
+    for C in C_list:
+        for gamma in gamma_list:
+            clf = svm.SVC(kernel='rbf', C=C, gamma=gamma, probability=True)
+            clf.fit(X_tr, y_tr)
+            predict = clf.predict(X_tu)
+            accuracy_curr = metrics.accuracy_score(y_tu, predict)
+            if accuracy_curr >= accuracy_high:
+                accuracy_high = accuracy_curr
+                best_gamma = gamma
+                best_C = C
+
+    # Fit the best tuning parameters to the training dataset
+    clf_final = svm.SVC(kernel='rbf', C=best_C, gamma=best_gamma, probability=True)
+    clf_final.fit(X_tr, y_tr)
+
+    # Make predictions from best training model onto the test dataset
+    predict_te = clf_final.predict(X_te)
+    accuracy_te = metrics.accuracy_score(y_te, predict_te)
+    print("The percentage of successfully classified {} is: {}".format(label, accuracy_te))
+    
     # Plot an ROC curve for the gaussian generative classifier for the circles data
     fig = plt.figure(1)
     true_pos_rate = []
     false_pos_rate = []
     counter = -1
     thresh = np.linspace(0, 1, 100)
+
+    # Get probabilities from final model, such that different thresholds can be applied
+    prob = clf_final.predict_proba(X_te)
 
     # Find the total number of positives and negatives in the data
     P = 0 # number of positives in data (when t = 1)
@@ -290,8 +314,8 @@ if __name__ == "__main__":
     circles_data = circles_data.T
     circles_targets = circles_targets[:,0]
 
-    # Train and test data using SMV algoithm - using randomly tuned values for C and gamma
-    classifySVM(circles_data, circles_targets, 0.9, 100, 0.1, 'Circles data using SVM', 'orange')
+    # Train, tune, and test data using SMV algoithm
+    classifySVM(circles_data, circles_targets, 'Circles data using SVM', 'orange')
 
 
     ################################################################################
@@ -331,7 +355,7 @@ if __name__ == "__main__":
     divorce_data = divorce_data.T
     divorce_targets = divorce_targets[:,0]
 
-    # Train and test data using SMV algoithm - using randomly tuned values for C and gamma
-    classifySVM(divorce_data, divorce_targets, 0.9, 1000, 0.01, 'divorce data using SVM', 'purple')
+    # Train, tune and test data using SMV algoithm
+    classifySVM(divorce_data, divorce_targets, 'divorce data using SVM', 'purple')
 
     plt.show()
