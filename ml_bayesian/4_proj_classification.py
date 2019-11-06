@@ -26,7 +26,7 @@ def getWeightsIRLS(w_old, data, targets):
     Y = np.zeros((N, 1))
 
     # IRLS Algorithm - complete a set amount of loops
-    for i in range(2000):
+    for i in range(100):
         counter = -1
 
         # Construct Y matrix (N x 1) and R matrix (N x N), Eq. 4.98
@@ -155,7 +155,7 @@ def plotROC(data, targets, weights, w0, label, color):
     plt.plot(false_pos_rate, true_pos_rate, color = color, label = label)
     plt.legend(loc='lower right')
 
-def classifySVM(data, targets, ratio, C, gamma, label):
+def classifySVM(data, targets, ratio, C, gamma, label, color):
     # Randomly divide the data for SVM
     M = data.shape[1]
     # print(M)
@@ -177,7 +177,7 @@ def classifySVM(data, targets, ratio, C, gamma, label):
     y_te = y_te[1:]
 
     # Fit the model with the training data
-    clf = svm.SVC(kernel='rbf', C=C, gamma=gamma)
+    clf = svm.SVC(kernel='rbf', C=C, gamma=gamma, probability=True)
     clf.fit(X_tr, y_tr)
     
     # Report the success of the fit on the test data
@@ -191,20 +191,57 @@ def classifySVM(data, targets, ratio, C, gamma, label):
         else:
             failure += 1
     print("The percentage of successfully classified {} is: {}".format(label, success / (success + failure)))
+    
+    # Find the probability of the classfication
+    prob = clf.predict_proba(X_te)
+
+    # Plot an ROC curve for the gaussian generative classifier for the circles data
+    fig = plt.figure(1)
+    true_pos_rate = []
+    false_pos_rate = []
+    counter = -1
+    thresh = np.linspace(0, 1, 100)
+
+    # Find the total number of positives and negatives in the data
+    P = 0 # number of positives in data (when t = 1)
+    N = 0 # number of negatives in data (when t = 0)
+    for target in np.nditer(y_te):
+        counter += 1
+        if target == 1: # Class 1
+            P += 1
+        else: # Class 2
+            N += 1
+
+    # Find the number of true and false positives
+    for i in range(len(thresh)):
+        FP = 0 # number of false positives
+        TP = 0 # number of true positives
+        counter = -1
+        for target in np.nditer(y_te):
+            counter += 1
+            if prob[counter,0] < thresh[i]:
+                target_guess = 1
+            else:
+                target_guess = 0
+            if target_guess == 1 and target == 1: # Find and sum true positives
+                TP += 1
+            elif target_guess == 1 and target == 0: # Find and sum false positives
+                FP += 1
+        true_pos_rate.append(TP / P)
+        false_pos_rate.append(FP / N)
+    plt.plot(false_pos_rate, true_pos_rate, color = color, label = label)
+    plt.legend(loc='lower right')
 
 if __name__ == "__main__":
 
     data = loadmat('mlData.mat')
 
     circles_targets = data['circles'][0][0][1]
-    # print(circles_targets.shape)
 
     circles_data = data['circles'][0][0][0]
     circles_data = circles_data.T
-    # print(circles_data.shape)
 
     N = circles_targets.shape[0]
-    # print(N)
 
     # Add additional basis function for circles data, phi_3 = x1^2 + x2^3
     circles_phi = np.zeros((1, N))
@@ -213,7 +250,6 @@ if __name__ == "__main__":
         counter += 1
         circles_phi[0,counter] = (circles_data[0,counter]**2 + circles_data[1,counter]**2)
     circles_data = np.vstack((circles_data, circles_phi))
-    # print(circles_data.shape)
 
     fig = plt.figure(1)
     plt.xlim(-0.01, 1)
@@ -230,8 +266,6 @@ if __name__ == "__main__":
     circles_w0 = circles_w[-1,0]
     classify(circles_data, circles_targets, circles_w, circles_w0, 0.5, 'circles data using gaussian generative')
     plotROC(circles_data, circles_targets, circles_w, circles_w0, 'circles data using gaussian generative', 'r')
-    # Using ROC curve from other classification models, since the results are perfect - can't find threshold tuner in sklearn
-    plotROC(circles_data, circles_targets, circles_w, circles_w0, 'circles data using SVM', 'orange')
 
     # Weights from circles data without the added basis function are better starting points for the IRLS algorithm 
     circles_data = circles_data[:-1,:]
@@ -257,7 +291,7 @@ if __name__ == "__main__":
     circles_targets = circles_targets[:,0]
 
     # Train and test data using SMV algoithm - using randomly tuned values for C and gamma
-    classifySVM(circles_data, circles_targets, 0.9, 100, 0.1, 'Circles data using SVM')
+    classifySVM(circles_data, circles_targets, 0.9, 100, 0.1, 'Circles data using SVM', 'orange')
 
 
     ################################################################################
@@ -292,14 +326,12 @@ if __name__ == "__main__":
     divorce_w_irls = getWeightsIRLS(divorce_w, divorce_data, divorce_targets)
     classify(divorce_data, divorce_targets, divorce_w_irls, divorce_w0, 0.5, 'divorce data using logistic regression')
     plotROC(divorce_data, divorce_targets, divorce_w_irls, divorce_w0, 'divorce data using logistic regression', 'g')
-    # Using ROC curve from other classification models, since the results are perfect - can't find threshold tuner in sklearn
-    plotROC(divorce_data, divorce_targets, divorce_w_irls, divorce_w0, 'divorce data using SVM', 'purple')
 
     # Reformat data to be compatible with SVM
     divorce_data = divorce_data.T
     divorce_targets = divorce_targets[:,0]
 
     # Train and test data using SMV algoithm - using randomly tuned values for C and gamma
-    classifySVM(divorce_data, divorce_targets, 0.9, 1000, 0.01, 'divorce data using SVM')
+    classifySVM(divorce_data, divorce_targets, 0.9, 1000, 0.01, 'divorce data using SVM', 'purple')
 
     plt.show()
