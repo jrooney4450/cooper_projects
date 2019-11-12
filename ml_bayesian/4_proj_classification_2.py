@@ -190,7 +190,8 @@ def classifySVM(data, targets, label, color):
     gamma_list = [2**(-15), 2**(-13), 2**(-11), 2**(-9), 2**(-7), 2**(-5), \
         2**(-3), 2**(-1), 2**(1), 2**(3)]
 
-    # Serach for the model parameters that result in the highest accuracy predictions on the tuning dataset 
+    # Serach for the model parameters that result in the highest accuracy 
+    # predictions on the tuning dataset 
     # return the best gamma and C values
     accuracy_high = 0
     accuracy_curr = 0

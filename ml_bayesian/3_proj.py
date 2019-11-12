@@ -18,9 +18,8 @@ def getWeightsIRLS(w_old, phi, targets):
     R = np.eye(N)
     Y = np.zeros((N, 1))
 
-    # IRLS Algorithm - complete when the difference between the data points is very small
-    for i in range(100):
-    # while difference > 0.0001: # option to use a step size to stop the loop
+    # IRLS Algorithm - faster form - complete for a set amount of loops
+    for i in range(500):
         counter = -1
 
         # Construct Y matrix (N x 1) and R matrix (N x N), Eq. 4.98
@@ -29,20 +28,12 @@ def getWeightsIRLS(w_old, phi, targets):
             y = sigmoid(np.matmul(w_old.T, phi[:,counter])) # Eq. 4.91
             R[counter,counter] = y
             Y[counter,0] = y
-        print(np.linalg.inv(R))
 
-        # Eq. 4.100 to construct Z matrix
-        z = np.matmul(iota, w_old)
-        dummy = Y - targets[0]
-        z = z - np.matmul(np.linalg.inv(R), dummy)
-
-        # Eq. 4.99 for Newton Raphson Gradient Descent
-        w_new = np.linalg.inv(np.matmul(np.matmul(iota.T, R), iota))
+        # Use more efficient version of Bishop's IRLS algorithm, two lines before Eq. 4.99
+        w_new = np.linalg.pinv(np.matmul(np.matmul(iota.T, R), iota))
         w_new = np.matmul(w_new, iota.T)
-        w_new = np.matmul(w_new, R)
-        w_new = np.matmul(w_new, z)
-        # difference = np.abs(w_old[1,0] - w_new[1,0]) # This is how the while loop checks step size
-        w_old = w_new
+        w_new = np.matmul(w_new, Y - targets[0])
+        w_new = w_old - w_new
 
     return w_new
 
@@ -344,6 +335,8 @@ if __name__ == "__main__":
     ################################# Logistic Regression ####################################
 
     # Use logistic regression with IRLS to recompute the weights. Feed ML estimate of the weights for the best initial condiditions.
+    circles_w = np.zeros((4,1))
+    # print(circles_w.shape)
     circles_w_irls = getWeightsIRLS(circles_w[1:,:], circles_phi, circles_targets)
 
     # Classify data with gaussian generative model and report success
