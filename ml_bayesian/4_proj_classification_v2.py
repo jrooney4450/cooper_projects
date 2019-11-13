@@ -42,6 +42,7 @@ def getWeightsIRLS(w_old, data, targets):
         w_new = np.matmul(w_new, iota.T)
         w_new = np.matmul(w_new, Y - targets)
         w_new = w_old - w_new
+        w_old = w_new
 
     return w_new
 
