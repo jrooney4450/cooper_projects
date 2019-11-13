@@ -50,9 +50,13 @@ if __name__ == "__main__":
     N = data.shape[0]
 
     # Initialize guesses for values we want to obtain
-    mus = [0, 0, 0]
-    sigs = [0.1, 0.1, 0.1]
-    pis = [0.33, 0.33, 0.34]
+    mus_old = [0, 0, 0]
+    sigs_old = [0.1, 0.1, 0.1]
+    pis_old = [0.33, 0.33, 0.34]
+
+    mus_new = mus_old
+    sigs_new = sigs_old
+    pis_new = pis_old
 
     for i in range(1): # TODO make a while loop to check proper convergence criterion
         for k in range(K):
@@ -61,29 +65,43 @@ if __name__ == "__main__":
             N_k_count = 0
             N_k = 0
             for x in np.nditer(data):
-                # Eq. 9.23
-                resp_num = pis[k] * mlab.normpdf(x, mus[k], sigs[k])
+                # Eq. 9.23 - E step - Re-estimate responsibilities using new parameters
+                resp_num = pis_old[k] * mlab.normpdf(x, mus_old[k], sigs_old[k])
                 resp_den = 0
                 for j in range(K):
-                    resp_den += pis[j] * mlab.normpdf(x, mus[j], sigs[j])
+                    resp_den += pis_old[j] * mlab.normpdf(x, mus_old[j], sigs_old[j])
                 resp = resp_num / resp_den
+
+                # M step - Re-estimate parameters using new responsibilites
                 mu_count += resp * x
                 N_k_count += resp
             N_k = N_k_count / N # Eq. 9.27
-            mus[k] = (1 / N_k) * mu_count # Eq. 9.24
-            pis[k] = N_k / N # Eq. 9.26
+
+            mus_new[k] = (1 / N_k) * mu_count # Eq. 9.24
+            pis_new[k] = N_k / N # Eq. 9.26
             
             for x in np.nditer(data):
-                sig_count += resp * (x - mus[k]) * (x - mus[k])
-            sigs[k] = (1 / N_k) * sig_count # Eq. 9.28
+                sig_count += resp * (x - mus_new[k]) * (x - mus_new[k])
+            sigs_new[k] = (1 / N_k) * sig_count # Eq. 9.28
 
-        print("Mus {}, Sigs {}, Pis {}".format(mus, sigs, pis))
+            mus_old = mus_new; sigs_old = sigs_new; pis_old = pis_new
+        
+        print("Mus {}, Sigs {}, Pis {}".format(mus_old, sigs_old, pis_old))
+
+            # Evaluate log likelihood
+
+            
+
+            
+
+
+        # print("Mus {}, Sigs {}, Pis {}".format(mus, sigs, pis))
 
     
 
     for k in range(K):
         count, bins, ignored = plt.hist(data, no_bins, density=True)
-        plt.plot(bins, 1/(sigs[k] * np.sqrt(2 * np.pi)) * \
-            np.exp( - (bins - mus[k])**2 / (2 * sigs[k]**2) ), linewidth=2, color='r')
+        plt.plot(bins, 1/(sigs_new[k] * np.sqrt(2 * np.pi)) * \
+            np.exp( - (bins - mus_new[k])**2 / (2 * sigs_new[k]**2) ), linewidth=2, color='r')
 
-    plt.show()
+    # plt.show()
