@@ -9,7 +9,7 @@ if __name__ == "__main__":
     
     # Generate draws from three gaussians
     mu1 = -0.6; mu2 = 0.2; mu3 = 0.8
-    sig1 = 0.15; sig2 = 0.4; sig3 = 0.1
+    sig1 = 0.4; sig2 = 0.1; sig3 = 0.15
     
     x = np.linspace(-1,1,5)
 
@@ -54,17 +54,15 @@ if __name__ == "__main__":
 
     # Initialize guesses for values we want to obtain
     mus_old = [-1, 0, 1]
-    sigs_old = [0.5, 0.5, 0.5]
-    pis_old = [0.1, 0.4, 0.5]
-    N_k = [0, 0, 0]
+    sigs_old = [0.3, 0.3, 0.3]
+    pis_old = [0.33, 0.33, 0.34]
 
-    # Initialize with zero - will be overwritten immeditately
-    mus_new = mus_old
-    sigs_new = sigs_old
-    pis_new = pis_old
+    # Initialize update parameters with zero - will be overwritten immeditately
+    mus_new = [0, 0, 0]
+    sigs_new = [0, 0, 0]
+    pis_new = [0, 0, 0]
 
-
-    for i in range(2): # TODO make a while loop to check proper convergence criterion
+    for i in range(3): # TODO make a while loop to check proper convergence criterion
         print('start of outer loop i = {}'.format(i))
         for k in range(K):
             print('start of k loop k = {}'.format(k))
@@ -74,7 +72,6 @@ if __name__ == "__main__":
             for x in np.nditer(data):
                 # Eq. 9.23 - E step - Re-estimate responsibilities using new parameters
                 resp_num = pis_old[k] * mlab.normpdf(x, mus_old[k], sigs_old[k])
-                # print('resp_num = {}'.format(resp_num))
                 resp_den = 0
                 for j in range(K):
                     resp_den += pis_old[j] * mlab.normpdf(x, mus_old[j], sigs_old[j])
@@ -84,22 +81,26 @@ if __name__ == "__main__":
 
                 # M step - Re-estimate parameters using new responsibilites
                 mu_count += resp * x
-                N_k_count += resp
-            N_k[k] = N_k_count / N # Eq. 9.27
-            # print('When k = {}, Nk = {}'.format(k, N_k))
+                N_k_count += resp # Eq. 9.27
 
-            mus_new[k] = (1 / N_k[k]) * mu_count # Eq. 9.24
+            mus_new[k] = (1 / N_k_count) * mu_count # Eq. 9.24
             # if k == 2:
             #     pis_new[2] = 1 - pis_new[0] - pis_new[1]
             # else:
-            pis_new[k] = N_k[k] / N # Eq. 9.26
+            pis_new[k] = N_k_count / N # Eq. 9.26
             
             for x in np.nditer(data):
+                resp_num = pis_old[k] * mlab.normpdf(x, mus_old[k], sigs_old[k])
+                resp_den = 0
+                for j in range(K):
+                    resp_den += pis_old[j] * mlab.normpdf(x, mus_old[j], sigs_old[j])
+                    # print('resp_den = {}'.format(resp_den))
+                resp = resp_num / resp_den
                 sig_count += resp * (x - mus_new[k]) * (x - mus_new[k])
-            sigs_new[k] = (1 / N_k[k]) * sig_count # Eq. 9.28
-            print('k = {}, Mus {}, Sigs {}, Pis {}'.format(k, mus_old, sigs_old, pis_old))
+            sigs_new[k] = (1 / N_k_count) * sig_count # Eq. 9.28
 
         mus_old = mus_new; sigs_old = sigs_new; pis_old = pis_new
+        print('k = {}, Mus {}, Sigs {}, Pis {}'.format(k, mus_old, sigs_old, pis_old))
 
         # print("Mus {}, Sigs {}, Pis {}".format(mus, sigs, pis))
 
