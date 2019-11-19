@@ -3,71 +3,119 @@ import scipy
 from scipy.stats import multivariate_normal
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
+from matplotlib.patches import Ellipse
+import matplotlib.transforms as transforms
 
+def plot_ellipse(ax, mu, sigma, color="k"):
+    """
+    Based on
+    http://stackoverflow.com/questions/17952171/not-sure-how-to-fit-data-with-a-gaussian-python.
+    """
+
+    # Compute eigenvalues and associated eigenvectors
+    vals, vecs = np.linalg.eigh(sigma)
+
+    # Compute "tilt" of ellipse using first eigenvector
+    x, y = vecs[:, 0]
+    theta = np.degrees(np.arctan2(y, x))
+
+    # Eigenvalues give length of ellipse along each eigenvector
+    w, h = 2 * np.sqrt(vals)
+
+    ax.tick_params(axis='both', which='major', labelsize=10)
+    ellipse = Ellipse(mu, w, h, theta, color=color)  # color="k")
+    ellipse.set_clip_box(ax.bbox)
+    ellipse.set_alpha(0.2)
+    ax.add_artist(ellipse) 
 
 if __name__ == "__main__":
-    ########################### 1D ##################################
+    ########################### 2D ##################################
     
-    # Generate draws from three gaussians
-    mu1 = np.array([-1, -1]) 
+    # Generate true means and covariances of three 2D gaussians 
+    mu1 = np.array([-0.66, 0]) 
     mu2 = np.array([1, 1])
     mu3 = np.array([1, -1])
     mus_true = np.vstack((mu1, mu2, mu3))
 
-    beta = 0.05
-    cov1 = beta * np.array([[1, 0], [0, 1]])
-    cov2 = beta * np.array([[1, 0], [0, 1]])
-    cov3 = beta * np.array([[1, 0], [0, 1]])
+    cov1 = 0.1 * np.array([[1, 0], [0, 1]])
+    cov2 = 0.4 * np.array([[1, 0], [0, 1]])
+    cov3 = 0.2 * np.array([[1, 0], [0, 1]])
     cov_true = np.vstack((cov1, cov2, cov3))
     
-    x = np.linspace(-1,1,5)
-
+    # Generate data draws from the gaussians
+    x = np.linspace(-1,1,100)
     data1 = np.random.multivariate_normal(mu1, cov1, size=x.shape)
     data2 = np.random.multivariate_normal(mu2, cov2, size=x.shape)
     data3 = np.random.multivariate_normal(mu3, cov3, size=x.shape)
 
-    # # Plot as single data draw, infer seperate gaussians
+    # Combine into single dataset for algorithm
     data = np.vstack((data1, data2, data3)) 
 
+    # Define useful data dimensions
     K = 3
     M = data.shape[1]
     N = data.shape[0]
 
-    # print(M)
-
+    # Fabricate guesses for algorithm starting point
+    # Should use K-Means to accomplish a better guess without prior knowledege
     # Mus are stored in K x M matrix
-    # mus_old = np.zeros((K, M))
-    mus_old = np.array([[-0.5, 0.5], [0.5, 0.5], [0.5, -0.5]])
+    mus_old = np.array([[-0.3, -0.3], [0.3, 0.3], [0.3, -0.3]])
     
-    # covariances are stored in (M*K) x M matrix
-    cov_old = np.eye((M))
+    # Fabricate covariance starting point - stored in (M*K) x M matrix
+    beta2 = 0.2
+    cov_old = beta2 * np.eye((M))
     cov_old = np.vstack((cov_old, cov_old, cov_old))
     
     # Pis are stored in K-length array
     pis_old = np.array([0.33, 0.33, 0.34])
 
-    # print(cov_old)
-
-    # # Initialize with zero - will be overwritten immeditately
+    # Initialize parameters with zero - these will be overwritten immeditately
     mus_new = np.zeros((K, M))
     cov_new = np.zeros((M, M))
-    cov_old = np.vstack((cov_old, cov_old, cov_old))
+    cov_new = np.vstack((cov_new, cov_new, cov_new))
     pis_new = [0, 0, 0]
 
-    j = 1
-    sol = pis_old[j] * multivariate_normal.pdf([0, 0], mus_old[j, :], cov_old[j*2:j*2+M,:])
-    print(sol)
+    # Print starting point to console
+    print('Initial guess:\nMeans: \n{}\n Sigmas: \n{}\n'\
+        .format(mus_old, cov_old))
 
+    # Initialize plotter variables needed in the loop
+    data_list = [data1, data2, data3]
+    colors = ['r', 'b', 'g']
+    colors2 = ['tomato', 'slateblue', 'limegreen']
+    
     # Initialize loop variables
     thresh = 0.01
     counter = 0
     ll_prev = 0
     ll_diff = 10
-    # for i in range(10): # TODO make a while loop to check proper convergence criterion
     while ll_diff > thresh: # Checks that the difference in the log-likelihood approaches zero
-        # print('start of outer loop i = {}'.format(i))
+
+        # Make a movie! Plot dataset with ellipse for newly calculated parameters
+        fig, ax_nstd = plt.subplots()
+        ax_nstd.set_title('2D Expectation Maximization')
+        ax_nstd.set_xlabel('x')
+        ax_nstd.set_ylabel('y') 
+
+        k = 0
+        ax_nstd.scatter(data1[:,0], data1[:,1], color = colors[k])
+        plot_ellipse(ax_nstd, mus_old[k, :], cov_old[k*2:k*2+M,:], color=colors2[k])
+
+        k = 1
+        ax_nstd.scatter(data2[:,0], data2[:,1], color = colors[k])
+        plot_ellipse(ax_nstd, mus_old[k, :], cov_old[k*2:k*2+M,:], color=colors2[k])
+        
+        k = 2
+        ax_nstd.scatter(data3[:,0], data3[:,1], color = colors[k])
+        plot_ellipse(ax_nstd, mus_old[k, :], cov_old[k*2:k*2+M,:], color=colors2[k])
+
+        plt.ion()
+        plt.show(block=False)
+        plt.pause(0.2)
+        # plt.close()
+        
         for k in range(K):
-            # print('start of k loop k = {}'.format(k))
+            # Initialize counters for summed components 
             mu_count = np.zeros((M))
             sig_count = np.eye((M))
             N_k_count = 0
@@ -100,23 +148,11 @@ if __name__ == "__main__":
             
             # Eq. 9.28 - covariance formulation
             cov_new = (1 / N_k_count) * sig_count
-            print(cov_new.shape)
-
             if k == 0:
                 cov_new = (1 / N_k_count) * sig_count
             else:
                 cov_stack = (1 / N_k_count) * sig_count
                 cov_new = np.vstack((cov_new, cov_stack))
-            print(cov_new)
-
-            # # Add some smoothing to the covariance 
-            # cov_low = 0.1
-            # cov_high = 1.0
-            # if cov_new[0,0] < cov_low and cov_new[1,1] < cov_low:
-            #     cov_new += np.array([[0.1, 0], [0, 0.1]])
-            # elif cov_new[0,0] > cov_high and cov_new[1,1] > cov_high:
-            #     cov_new -= np.array([[0.1, 0], [0, 0.1]])
-
             if k > 0:
                 cov_stack = (1 / N_k_count) * sig_count
                 cov_new = np.vstack((cov_new, cov_stack))
@@ -132,25 +168,30 @@ if __name__ == "__main__":
             ll += np.log(ll_count)
         ll_diff = np.abs(ll - ll_prev)
         ll_prev = ll
-        print('log likelihood {}\nll difference {}'.format(ll, ll_diff))
 
+        # Re-assign parameters for next loop iteration
         mus_old = mus_new; cov_old = cov_new; pis_old = pis_new
         counter += 1
-
-        # print('k = \n{}\n, Mus \n{}\nSigs \n{}\nPis \n{}\n'.format(k, mus_old, cov_old, pis_old))
-        # # print("Mus {}, Sigs {}, Pis {}".format(mus, sigs, pis))
 
     print('Final values!\nActual Means: \n{}\nEM Means: \n{}\nActual Sigmas: \n{}\nEM Sigmas: \n{}\
         \nafter {} iterations'.format(mus_true, mus_new, cov_true, cov_new, counter))
 
-    # plot original data as a scatter plot
-    plt.figure(1)
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.title('Expectation Maximization 2D')
+    # Plot final values and maintain plot
+    fig, ax_nstd = plt.subplots()
+    ax_nstd.set_title('2D Expectation Maximization')
+    ax_nstd.set_xlabel('x')
+    ax_nstd.set_ylabel('y') 
 
-    plt.scatter(data1[:,0], data1[:,1], color = 'r')
-    plt.scatter(data2[:,0], data2[:,1], color = 'b')
-    plt.scatter(data3[:,0], data3[:,1], color = 'g')
+    k = 0
+    ax_nstd.scatter(data1[:,0], data1[:,1], color = colors[k])
+    plot_ellipse(ax_nstd, mus_new[k, :], cov_new[k*2:k*2+M,:], color=colors2[k])
 
-    plt.show()
+    k = 1
+    ax_nstd.scatter(data2[:,0], data2[:,1], color = colors[k])
+    plot_ellipse(ax_nstd, mus_new[k, :], cov_new[k*2:k*2+M,:], color=colors2[k])
+    
+    k = 2
+    ax_nstd.scatter(data3[:,0], data3[:,1], color = colors[k])
+    plot_ellipse(ax_nstd, mus_new[k, :], cov_new[k*2:k*2+M,:], color=colors2[k])
+
+    plt.show(block=True)

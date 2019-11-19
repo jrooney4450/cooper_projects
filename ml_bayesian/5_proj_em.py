@@ -39,7 +39,7 @@ if __name__ == "__main__":
     plt.xlabel('x')
     plt.ylabel('Probability')
     plt.title('Expectation Maximization PDF over Histogram')
-    no_bins = 50
+    no_bins = 100
     bin1 = int(sig1*no_bins); bin2 = int(sig2*no_bins); bin3 = int(sig3*no_bins)
     bin_list = [bin1, bin2, bin3]
     data_list = [data1, data2, data3]
@@ -53,7 +53,35 @@ if __name__ == "__main__":
     counter = 0
     ll_prev = 0
     ll_diff = 10
-    while ll_diff > thresh: # Checks that the difference in the log-likelihood approaches zero
+    for i in range(21):
+    # while ll_diff > thresh: # Checks that the difference in the log-likelihood approaches zero
+        
+        # Make a movie! Plot histogram with pdf after each parameter update
+        plt.figure(i)
+        plt.xlabel('x')
+        plt.ylabel('Probability')
+        plt.title('Expectation Maximization PDF over Histogram')
+
+        k = 0
+        count, bins, ignored = plt.hist(data_list[k], bin_list[k], density=True, color = colors[k])
+        plt.plot(bins, 1/(sigs_old[k] * np.sqrt(2 * np.pi)) * \
+            np.exp( - (bins - mus_old[k])**2 / (2 * sigs_old[k]**2) ), linewidth=2, color = colors2[k])
+        
+        k = 1
+        count, bins, ignored = plt.hist(data_list[k], bin_list[k], density=True, color = colors[k])
+        plt.plot(bins, 1/(sigs_old[k] * np.sqrt(2 * np.pi)) * \
+            np.exp( - (bins - mus_old[k])**2 / (2 * sigs_old[k]**2) ), linewidth=2, color = colors2[k])
+        
+        k = 2
+        count, bins, ignored = plt.hist(data_list[k], bin_list[k], density=True, color = colors[k])
+        plt.plot(bins, 1/(sigs_old[k] * np.sqrt(2 * np.pi)) * \
+            np.exp( - (bins - mus_old[k])**2 / (2 * sigs_old[k]**2) ), linewidth=2, color = colors2[k])
+
+        plt.ion()
+        plt.show(block=False)
+        plt.pause(0.1)
+        # plt.clf()
+        
         for k in range(K):
             mu_count = 0
             N_k_count = 0
@@ -103,32 +131,6 @@ if __name__ == "__main__":
         ll_diff = np.abs(ll - ll_prev)
         ll_prev = ll
         print('log likelihood {}\nll difference {}'.format(ll, ll_diff))
-
-        # Plot dynamically for each iteration
-        plt.figure(1)
-        plt.xlabel('x')
-        plt.ylabel('Probability')
-        plt.title('Expectation Maximization PDF over Histogram')
-
-        k = 0
-        count, bins, ignored = plt.hist(data_list[k], bin_list[k], density=True, color = colors[k])
-        plt.plot(bins, 1/(sigs_new[k] * np.sqrt(2 * np.pi)) * \
-            np.exp( - (bins - mus_new[k])**2 / (2 * sigs_new[k]**2) ), linewidth=2, color = colors2[k])
-        
-        k = 1
-        count, bins, ignored = plt.hist(data_list[k], bin_list[k], density=True, color = colors[k])
-        plt.plot(bins, 1/(sigs_new[k] * np.sqrt(2 * np.pi)) * \
-            np.exp( - (bins - mus_new[k])**2 / (2 * sigs_new[k]**2) ), linewidth=2, color = colors2[k])
-        
-        k = 2
-        count, bins, ignored = plt.hist(data_list[k], bin_list[k], density=True, color = colors[k])
-        plt.plot(bins, 1/(sigs_new[k] * np.sqrt(2 * np.pi)) * \
-            np.exp( - (bins - mus_new[k])**2 / (2 * sigs_new[k]**2) ), linewidth=2, color = colors2[k])
-
-        plt.ion()
-        plt.show(block=False)
-        plt.pause(0.1)
-        plt.clf()
         
         counter += 1
         
@@ -140,7 +142,7 @@ if __name__ == "__main__":
         \nafter {} iterations'.format(mus_true, mus_new, sigs_true, sigs_new, counter))
 
     # Leave final plot open upon completion
-    plt.figure(1)
+    plt.figure()
     plt.xlabel('x')
     plt.ylabel('Probability')
     plt.title('Expectation Maximization PDF over Histogram')
