@@ -7,24 +7,19 @@ if __name__ == "__main__":
     ########################### 1D ##################################
     
     # Generate draws from three gaussians
-    mu1 = -2.; mu2 = -0.5; mu3 = 1.2
+    mu1 = -0.8; mu2 = -0.2; mu3 = 0.4
     mus_true = [mu1, mu2, mu3]
-    sig1 = 0.2; sig2 = 0.5; sig3 = 0.2
+    sig1 = 0.1; sig2 = 0.2; sig3 = 0.25
     sigs_true = [sig1, sig2, sig3]
 
+    # Generate random draws of data following generated gaussians
     x = np.linspace(-1,1,200)
-
     data1 = np.random.normal(mu1, sig1, x.shape)
     data2 = np.random.normal(mu2, sig2, x.shape)
     data3 = np.random.normal(mu3, sig3, x.shape)
 
-    # Combine to single data draw, infer seperate gaussians
+    # Combine to single data draw
     data = np.hstack((data1, data2, data3))
-
-    # count, bins, ignored = plt.hist(data, no_bins, density=True) 
-
-    K = 3
-    N = data.shape[0]
 
     # Initialize guesses for values we want to obtain
     mus_old = [-1, 0, 1]
@@ -52,11 +47,12 @@ if __name__ == "__main__":
     colors2 = ['tomato', 'slateblue', 'limegreen']
 
     # Initialize loop variables
+    K = 3
+    N = data.shape[0]
     thresh = 0.01
     counter = 0
     ll_prev = 0
     ll_diff = 10
-    # for i in range(5):
     while ll_diff > thresh: # Checks that the difference in the log-likelihood approaches zero
         for k in range(K):
             mu_count = 0
@@ -78,7 +74,7 @@ if __name__ == "__main__":
             pis_new[k] = N_k_count / N # Eq. 9.26
             
             # New mean is needed for variance calculations
-            # Re-calculate by looping through data again
+            # Re-calculate responsibility for Eq. 9.28 by looping through data again
             sig_count = 0
             for x in np.nditer(data):
                 resp_num = pis_old[k] * mlab.normpdf(x, mus_old[k], sigs_old[k])
@@ -97,6 +93,7 @@ if __name__ == "__main__":
                 sigs_new[k] -= 0.1
 
         # Evaluate the log likelihood - Eq. 9.28
+        # Use to determine when EM cannot find a better solution
         ll = 0
         for x in np.nditer(data):
             ll_count = 0
@@ -105,7 +102,9 @@ if __name__ == "__main__":
             ll += np.log(ll_count)
         ll_diff = np.abs(ll - ll_prev)
         ll_prev = ll
+        print('log likelihood {}\nll difference {}'.format(ll, ll_diff))
 
+        # Plot dynamically for each iteration
         plt.figure(1)
         plt.xlabel('x')
         plt.ylabel('Probability')
@@ -132,12 +131,19 @@ if __name__ == "__main__":
         plt.clf()
         
         counter += 1
+        
+        # Reassign old parameters to new values and iterate algorithm
         mus_old = mus_new; sigs_old = sigs_new; pis_old = pis_new
 
+    # Print restults to console
     print('Final values!\nActual Means: \n{}\nEM Means: \n{}\nActual Sigmas: \n{}\nEM Sigmas: \n{}\
         \nafter {} iterations'.format(mus_true, mus_new, sigs_true, sigs_new, counter))
 
-    # Leave final plot open
+    # Leave final plot open upon completion
+    plt.figure(1)
+    plt.xlabel('x')
+    plt.ylabel('Probability')
+    plt.title('Expectation Maximization PDF over Histogram')
     for k in range(K):  
         count, bins, ignored = plt.hist(data_list[k], bin_list[k], density=True, color = colors[k])
         plt.plot(bins, 1/(sigs_new[k] * np.sqrt(2 * np.pi)) * \
