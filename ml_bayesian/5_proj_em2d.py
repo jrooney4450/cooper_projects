@@ -12,18 +12,19 @@ if __name__ == "__main__":
     mu1 = np.array([-1, -1]) 
     mu2 = np.array([1, 1])
     mu3 = np.array([1, -1])
-
-    cov1 = np.array([[1, 0], [0, 1]])
-    cov2 = np.array([[1, 0], [0, 1]])
-    cov3 = np.array([[1, 0], [0, 1]])
+    mus_true = np.vstack((mu1, mu2, mu3))
 
     beta = 0.05
+    cov1 = beta * np.array([[1, 0], [0, 1]])
+    cov2 = beta * np.array([[1, 0], [0, 1]])
+    cov3 = beta * np.array([[1, 0], [0, 1]])
+    cov_true = np.vstack((cov1, cov2, cov3))
     
     x = np.linspace(-1,1,5)
 
-    data1 = np.random.multivariate_normal(mu1, beta*cov1, size=x.shape)
-    data2 = np.random.multivariate_normal(mu2, beta*cov2, size=x.shape)
-    data3 = np.random.multivariate_normal(mu3, beta*cov3, size=x.shape)
+    data1 = np.random.multivariate_normal(mu1, cov1, size=x.shape)
+    data2 = np.random.multivariate_normal(mu2, cov2, size=x.shape)
+    data3 = np.random.multivariate_normal(mu3, cov3, size=x.shape)
 
     # print(mu1.reshape(-1,1))
 
@@ -56,14 +57,14 @@ if __name__ == "__main__":
 
     # Mus are stored in K x M matrix
     # mus_old = np.zeros((K, M))
-    mus_old = np.array([[-1, 1], [-1, 1], [-1, -1]])
+    mus_old = np.array([[-0.5, 0.5], [0.5, 0.5], [0.5, -0.5]])
     
     # covariances are stored in (M*K) x M matrix
     cov_old = np.eye((M))
     cov_old = np.vstack((cov_old, cov_old, cov_old))
     
     # Pis are stored in K-length array
-    pis_old = np.array([0.3, 0.3, 0.4])
+    pis_old = np.array([0.33, 0.33, 0.34])
 
     # print(cov_old)
 
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     mus_new = np.zeros((K, M))
     cov_new = np.zeros((M, M))
     cov_old = np.vstack((cov_old, cov_old, cov_old))
-    pis_new = np.array([0, 0, 0])
+    pis_new = [0, 0, 0]
 
     # print(data[0,:])
     # print(mu1)
@@ -80,24 +81,18 @@ if __name__ == "__main__":
     # print(prob)
     # # print(pis_old[0])
 
-    # # k = 0
-    # j = 1
-    # print(mus_old[j, :])
-    # print(cov_old[j:j+M,:])
-    # print(pis_old[j])
-    # print(data[7,:])
-    # sol = pis_old[j] * multivariate_normal.pdf([0, 0], mus_old[j, :], cov_old[j*2:j*2+M,:])
-    # print(sol)
+    j = 1
+    sol = pis_old[j] * multivariate_normal.pdf([0, 0], mus_old[j, :], cov_old[j*2:j*2+M,:])
+    print(sol)
 
-    for i in range(5): # TODO make a while loop to check proper convergence criterion
+    counter = 0
+    for i in range(10): # TODO make a while loop to check proper convergence criterion
         # print('start of outer loop i = {}'.format(i))
         for k in range(K):
             # print('start of k loop k = {}'.format(k))
             mu_count = np.zeros((M))
             sig_count = np.eye((M))
             N_k_count = 0
-            # print(mu_count)
-            # print(sig_count)
             for n in range(N):
                 # Eq. 9.23 - E step - Re-estimate responsibilities using new parameters
                 x = data[n, :]
@@ -122,12 +117,39 @@ if __name__ == "__main__":
                 for j in range(K):
                     resp_den += pis_old[j] * multivariate_normal.pdf(x, mus_old[j, :], cov_old[j*2:j*2+M,:])
                 resp = resp_num / resp_den
-                sig_count += resp * np.matmul((x.reshape(-1, 1) - mus_new[k, :].reshape(-1, 1)), (x.reshape(-1, 1) - (mus_new[k, :].reshape(-1, 1))).T)
-            cov_new[k*2:k*2+M,:] = (1 / N_k_count) * sig_count # Eq. 9.28
+                sig_count += resp * np.matmul((x.reshape(-1, 1) - mus_new[k, :].reshape(-1, 1)), \
+                    (x.reshape(-1, 1) - (mus_new[k, :].reshape(-1, 1))).T)
+            
+            # Eq. 9.28 - covariance formulation
+            cov_new = (1 / N_k_count) * sig_count
+            print(cov_new.shape)
+            # if k == 0:
+            #     cov_new = (1 / N_k_count) * sig_count
+            # else:
+            #     cov_stack = (1 / N_k_count) * sig_count
+            #     cov_new = np.vstack((cov_new, cov_stack))
+            # print(cov_new)
+            # cov_new[k*2:k*2+M,M] = (1 / N_k_count) * sig_count # Eq. 9.28
+
+            # Add some smoothing to the covariance 
+            cov_low = 0.1
+            cov_high = 1.0
+            if cov_new[0,0] < cov_low and cov_new[1,1] < cov_low:
+                cov_new += np.array([[0.1, 0], [0, 0.1]])
+            elif cov_new[0,0] > cov_high and cov_new[1,1] > cov_high:
+                cov_new -= np.array([[0.1, 0], [0, 0.1]])
+
+            if k > 0:
+                cov_stack = (1 / N_k_count) * sig_count
+                cov_new = np.vstack((cov_new, cov_stack))
 
         mus_old = mus_new; cov_old = cov_new; pis_old = pis_new
+        counter += 1
 
-        print('k = {}, Mus {} \nSigs {} \nPis {}'.format(k, mus_old, cov_old, pis_old))
+        print('k = \n{}\n, Mus \n{}\nSigs \n{}\nPis \n{}\n'.format(k, mus_old, cov_old, pis_old))
         # print("Mus {}, Sigs {}, Pis {}".format(mus, sigs, pis))
+
+    print('Final values!\nActual Means: \n{}\nEM Means: \n{}\nActual Sigmas: \n{}\nEM Sigmas: \n{}\
+        \nafter {} iterations'.format(mus_true, mus_new, cov_true, cov_new, counter))
 
     # plt.show()
