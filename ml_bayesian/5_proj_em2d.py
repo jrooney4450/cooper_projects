@@ -112,7 +112,7 @@ if __name__ == "__main__":
         plt.ion()
         plt.show(block=False)
         plt.pause(0.2)
-        # plt.close()
+        plt.close()
         
         for k in range(K):
             # Initialize counters for summed components 
