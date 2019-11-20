@@ -53,11 +53,10 @@ if __name__ == "__main__":
     counter = 0
     ll_prev = 0
     ll_diff = 10
-    for i in range(21):
-    # while ll_diff > thresh: # Checks that the difference in the log-likelihood approaches zero
+    while ll_diff > thresh: # Checks that the difference in the log-likelihood approaches zero
         
         # Make a movie! Plot histogram with pdf after each parameter update
-        plt.figure(i)
+        plt.figure(1)
         plt.xlabel('x')
         plt.ylabel('Probability')
         plt.title('Expectation Maximization PDF over Histogram')
@@ -80,7 +79,7 @@ if __name__ == "__main__":
         plt.ion()
         plt.show(block=False)
         plt.pause(0.1)
-        # plt.clf()
+        plt.clf()
         
         for k in range(K):
             mu_count = 0
@@ -130,7 +129,7 @@ if __name__ == "__main__":
             ll += np.log(ll_count)
         ll_diff = np.abs(ll - ll_prev)
         ll_prev = ll
-        print('log likelihood {}\nll difference {}'.format(ll, ll_diff))
+        # print('log likelihood {}\nll difference {}'.format(ll, ll_diff))
         
         counter += 1
         
@@ -142,7 +141,7 @@ if __name__ == "__main__":
         \nafter {} iterations'.format(mus_true, mus_new, sigs_true, sigs_new, counter))
 
     # Leave final plot open upon completion
-    plt.figure()
+    plt.figure(1)
     plt.xlabel('x')
     plt.ylabel('Probability')
     plt.title('Expectation Maximization PDF over Histogram')
