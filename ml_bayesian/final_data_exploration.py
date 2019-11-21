@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     # Data obtained through kaggle, see here: 
     # https://www.kaggle.com/new-york-city/nyc-property-sales
-    data_path = 'nyc-rolling-sales.csv'
+    data_path = 'data/nyc-rolling-sales.csv'
 
     # Import as DataFrame using Pandas
     df = pd.read_csv(data_path)
