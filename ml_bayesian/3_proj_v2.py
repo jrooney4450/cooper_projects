@@ -88,7 +88,7 @@ def getWeights(data, targets, p_C1):
 
 if __name__ == "__main__":
 
-    data = loadmat('mlData.mat')
+    data = loadmat('data/mlData.mat')
 
     unimodal_data = np.array([data['unimodal'][0][0][0]])
     unimodal_data = unimodal_data.T # Transpose to make x into vectors - M X N

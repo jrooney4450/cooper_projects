@@ -260,7 +260,7 @@ def classifySVM(data, targets, label, color):
 
 if __name__ == "__main__":
 
-    data = loadmat('mlData.mat')
+    data = loadmat('data/mlData.mat')
 
     circles_targets = data['circles'][0][0][1]
 
@@ -325,7 +325,7 @@ if __name__ == "__main__":
     ################################################################################
 
     # Data obtained through UCI, see here https://archive.ics.uci.edu/ml/datasets/Divorce+Predictors+data+set
-    data_path = 'divorce.csv'
+    data_path = 'data/divorce.csv'
 
     # The data has features of M = 54 with total datapoints N = 170
     divorce_data = np.loadtxt(data_path, delimiter=';', skiprows=1)
