@@ -46,22 +46,19 @@ def main():
     data = np.random.normal(mu, sig, N)
     data_new = []
 
-    # for pt in data:
-    #     kq_pt = k * norm.pdf(pt, mu, sig) # max probabilty of this particular draw
-    #     # N_u = 50
-    #     u = np.random.uniform(0, kq_pt) # from uniform distribution [0, kq(pt)]
-    #     # u_max = 0
-    #     # for u in u_array:
-    #     if u > norm.pdf(pt, mu1, sig1) and u > norm.pdf(pt, mu2, sig2) and u > norm.pdf(pt, mu3, sig3):
-    #         # print("This point should get rejected")
-    #         plt.scatter(pt, u, c='r', s=0.8)
-    #     else:
-    #         # print("keep this point")
-    #         plt.scatter(pt, u, c='g', s=0.8)
-    #         data_new.append(pt)
+    for pt in data:
+        kq_pt = k * norm.pdf(pt, mu, sig) # max probabilty of this particular draw
+        u = np.random.uniform(0, kq_pt) # from uniform distribution [0, kq(pt)]
+        if u > norm.pdf(pt, mu1, sig1) and u > norm.pdf(pt, mu2, sig2) and u > norm.pdf(pt, mu3, sig3):
+            # Reject this point
+            plt.scatter(pt, u, c='r', s=0.8)
+        else:
+            # Keep this point
+            plt.scatter(pt, u, c='g', s=0.8)
+            data_new.append(pt)
 
-    # bins = 30
-    # plt.hist(data_new, bins, density=True, color='mistyrose', label='new data draw')
+    bins = 30
+    plt.hist(data_new, bins, density=True, color='mistyrose', label='new data draw')
 
     plt.legend(loc='best')
     plt.show()
