@@ -19,135 +19,104 @@ def getPhi(M, x1, x2, i):
         phi[m + 1] = basFunGauss(x1[i], x2[m])
     return phi
 
-
 def plotMCMCModel(x, t, N, x_sin, y_sin):
     x = x[0:N]
     t = t[0:N]
 
-    M = 2 # Number of weights
-    w = (np.random.random_sample(M) * 2) - 1 # random guess for the weights
-
-    # parameters
+    # Choose parameters
+    M = 10 # Number of weights
     sig = 0.2
     beta = (1/sig)**2
     alpha = 2.0
 
-    # construt a prior
-    m0 = np.zeros((M,))
-    k = 1
-    S0 = k * np.identity(M)
-    
+    # Perform the Bayesian Linear Regression Treatment as was done for homework 2
     iota = np.zeros((N, M))
     for i in range(N):
         iota[i, :] = getPhi(M, x, x, i)
-
-    # # Update the covariance matrix
     t = t.reshape(-1, 1)
     S_N = np.linalg.inv(alpha*np.identity(M) + beta*(np.matmul(np.transpose(iota), iota))) # Eq. 3.54
     m_N = beta * np.matmul(np.matmul(S_N, np.transpose(iota)), t) # Eq. 3.53
 
+    # Chose variance for prior for MCMC
+    k = 1
+    S0 = k * np.identity(M)
 
-##############################################################################################
+    # Choose variance for z_star updates for MCMC
+    var = 0.2
+    S = var * np.identity(M)
 
-    S = 0.04*S0 # Const cov for mean refresh
-
-    z_prev = w
-    z_star = np.random.multivariate_normal(z_prev, S) # gen first sample
+    # Generate initial guesses for z_prev and z_star
+    z_prev = (np.random.random_sample(M) * 2) - 1
+    z_star = np.random.multivariate_normal(z_prev, S)
     z = [z_prev, z_star] # store into list
-    p = [0, 0] # probabilities of z_prev and z_star
-    log_prior = multivariate_normal.pdf(z[0], m0, S0)
+    p = [0, 0] # store posterior probabilities of z_prev and z_star into list
 
-    # Make a movie! Plot dataset with ellipse for newly calculated parameters
+    # Initialize plot
     fig, ax_loop = plt.subplots()
-    ax_loop.set_title('2D Expectation Maximization')
+    ax_loop.set_title('MCMC Weight Pairs Accepted and Rejected')
     ax_loop.set_xlabel('w0')
     ax_loop.set_ylabel('w1') 
-    ax_loop.set_xlim(-5, 5)
-    ax_loop.set_ylim(-5, 5)
 
-    log_prior = np.log(multivariate_normal.pdf(z[0], m0, S0))
+    # Initialize loop variables
+    z_avg_sum = np.zeros((M,))
+    avg_count = 0.0
+    N_burn_in = 200
+    N_loop = 2000
+    isNotPrinted = True
 
-    min_like = 0.0 # store point with maximum likelihood
-    min_like_z = np.zeros((2,))
-
-    for _ in range(10000):
+    for count in range(N_loop):
         for k in range(2):
-            like_sum = 0
-
+            like = 0
+            # Eq. 3.10 - Calculate the likelihood
             for i in range(N):
-                # phi = np.array([1, basFunGauss(x[i], x[0]), basFunGauss(x[i], x[1]), basFunGauss(x[i], x[2])]) # M = 4
-                # phi = np.array([1, basFunGauss(x[i], x[0])])
                 phi = getPhi(M, x, x, i)
-                like = mlab.normpdf(t[i], np.dot(z[k], phi), beta**(-1)) # Eq. 3.10 for likelihood
-                like_sum += like
+                like += mlab.normpdf(t[i], np.dot(z[k], phi), var) # Eq. 3.10 for likelihood
             
-            log_like = np.log(like_sum)
-            # print('{} log likelihood'.format(log_like))
-            log_prior = np.log(multivariate_normal.pdf(z[k], m0, S0))
-            p[k] = log_prior + log_like # this is the posterior
+            # Recenter proposal distribution (prior) around last accepted z_value
+            prior = multivariate_normal.pdf(z[k], z[0], S0)
+            
+            # Calculate the log posterior
+            p[k] = np.log(prior + like)
 
-            if np.abs(log_like) < min_like:
-                min_like_z = z[k]
+        # Confirm that the model has run through the burn in phase
+        if count > N_burn_in and isNotPrinted:
+            print('burn in phase completed!')
+            isNotPrinted = False
 
+        # Eq. 11.33 - Use metropolis criterion to accept or reject weight pairs
         u = np.random.uniform(0, 1)
-        A = min([1.0, p[0] / p[1]]) # Eq. 11.33 - Metropolis criterion
-
-        print('{} log likelihood'.format(log_like))
-        print('{}: old weights'.format(m_N[:,0]))
-        print('{}: best weight'.format(min_like_z))
-        print('{}: new weights\n'.format(z[0]))
-
-        if A > u: # accept this point
-            # print('point accepted')
-            ax_loop.scatter(z[0][0], z[0][1], color = 'red')
+        prob = p[1] / p[0]
+        A = min([1.0, prob])
+        if A > u: # Accept this point
             ax_loop.scatter(z[1][0], z[1][1], color = 'green', s=0.8) # plot z_star as success
             z[0] = z[1] # z_star assigned to z_prev
-            z[1] = np.random.multivariate_normal(z[0], S) # draw another data point
-            # log_prior = p[1] # set equal to previous posterior
+            z[1] = np.random.multivariate_normal(z[0], S) # draw another z_star value
+            if count > N_burn_in: # Start averaging values after burn in complete
+                z_avg_sum += z[0] # Sum the accepted z_star value
+                avg_count += 1
 
-        else: # reject this point 
-            # print('point rejected')
+        else: # Reject this point
             ax_loop.scatter(z[1][0], z[1][1], color = 'red', s=0.8) # plot z_star as failure
             z[1] = np.random.multivariate_normal(z[0], S) # try again with another data point
 
-        # # Make a movie
-        # plt.ion()
-        # plt.show(block=False)
-        # plt.pause(0.1)
-        # plt.close()
+    best_z = z_avg_sum / (avg_count)
 
-    ax_loop.scatter(z[0][0], z[0][1], color = 'cyan', marker='x', s=2)
-    ax_loop.scatter(min_like_z[0], min_like_z[1], color = 'black', marker='x', s=2)
+    print('bayesian old weights: {}'.format(m_N[:,0]))
+    print('avg weight from mcmc: {}'.format(best_z))
 
-    # Chose which value to use from MCMC
-    print('last weight from mcmc: {}'.format(z[0]))
-    print('min like weight from mcmc: {}'.format(min_like_z))
-    # best_z = z[0].reshape(-1, 1)
-    best_z = min_like_z.reshape(-1, 1)
-
-    # Calculate the regression line for a given domain
+    # Calculate the regression line for the MCMC weights
     I = 100
     x_plot = np.linspace(-0.1, 1.1, I)
     mean_list = []
     low_list = []
     high_list = []
     for i in range(I):
-        # phi of x, running through basis functions
         design_vector = getPhi(M, x_plot, x, i).reshape(-1, 1)
         mean_arr = np.matmul(np.transpose(best_z), design_vector)
-        # Calculate the variance following Eq. 3.59
-        variance_arr = 1/beta + np.matmul(np.matmul(np.transpose(design_vector), S), design_vector)
-        low_arr = mean_arr - variance_arr**(1/2)
-        high_arr = mean_arr + variance_arr**(1/2)
-        mean_list.append(mean_arr[0, 0])
-        low_list.append(low_arr[0, 0])
-        high_list.append(high_arr[0, 0])
-        # Plot the regression line with high and low variance bounding lines
-    
+        mean_list.append(mean_arr[0])
+
     fig, ax2 = plt.subplots()
     ax2.plot(x_plot, mean_list, color='red')
-    ax2.fill_between(x_plot, low_list, high_list, color='mistyrose')
-
     ax2.set_xlabel('x')
     ax2.set_ylabel('t')
     ax2.set_title('MCMC Linear Regression')
@@ -156,9 +125,10 @@ def plotMCMCModel(x, t, N, x_sin, y_sin):
     for n in range(N):
         ax2.scatter(x[n], t[n], facecolors='none', edgecolors='blue')
 
-#############################################################################################
+    # Plot the original sine curve
+    ax2.plot(x_sin, y_sin, color='green')
 
-    # Calculate the regression line for a given domain
+    # Calculate the regression line for bayesian estimate which is correct
     I = 100
     x_plot = np.linspace(-0.1, 1.1, I)
     mean_list = []
@@ -209,24 +179,6 @@ def main():
     t = np.sin(math.pi*2*x) # find true value of y
     t += noise_t # Eq. 3.7 add gaussian noise to y
 
-    # Construct the prior
-    beta = (1/noise_sigma)**2
-    alpha = 2.0
-    m_0 = [0, 0]
-    S_0 = alpha**(-1)*np.identity(2)
-
-    # # plot 2x2 subplots with the same x-axis and y-axis
-    # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex=True, sharey=True)
-    # ax1.set_xlim(left = -0.1, right = 1.1)
-    # ax1.set_ylim(bottom = -1.2, top = 1.2)
-
-    # # Run the model with seperate draws of data
-    # plotModel(ax1, 1, "one data point")
-    # plotModel(ax2, 2, "two data points")
-    # plotModel(ax3, 4, "four data points")
-    # plotModel(ax4, 25, "25 data points")
-
-    # plt.figure(2)
     N = 25
     plotMCMCModel(x, t, N, x_sin, y_sin)
 
