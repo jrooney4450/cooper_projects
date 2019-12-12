@@ -33,8 +33,8 @@ def plotMCMCModel(a, x, t, N, alpha, beta):
     # Initialize loop variables
     z_avg_sum = np.zeros((M,))
     avg_count = 0.0
-    N_burn_in = 1000
-    N_loop = 10000
+    N_burn_in = 200
+    N_loop = 2000
     isNotPrinted = True
 
     phi = np.zeros((N,2))
@@ -92,8 +92,11 @@ def plotMCMCModel(a, x, t, N, alpha, beta):
 
     best_z = z_avg_sum / (avg_count) # take average of all accepted mean pairs
 
-    print('bayesian old weights: {}'.format(a))
-    print('avg weight from mcmc: {}'.format(best_z))
+    # Plot location of actual weights
+    ax_loop.scatter(a[0], a[1], color='white', marker='x')
+
+    print('synthetic weights: {}'.format(a))
+    print('avg weights from mcmc: {}'.format(best_z))
 
 def main():
     
