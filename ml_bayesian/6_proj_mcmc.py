@@ -66,17 +66,17 @@ def plotMCMCModel(x, t, N, x_sin, y_sin):
 
     for count in range(N_loop):
         for k in range(2):
-            like = 0
+            log_like = 0
             # Eq. 3.10 - Calculate the likelihood
             for i in range(N):
                 phi = getPhi(M, x, x, i)
-                like += mlab.normpdf(t[i], np.dot(z[k], phi), var) # Eq. 3.10 for likelihood
+                log_like += np.log(mlab.normpdf(t[i], np.dot(z[k], phi), var)) # Eq. 3.10 for likelihood
             
             # Recenter proposal distribution (prior) around last accepted z_value
-            prior = multivariate_normal.pdf(z[k], z[0], S0)
+            log_prior = np.log(multivariate_normal.pdf(z[k], z[0], S0))
             
             # Calculate the log posterior
-            p[k] = np.log(prior + like)
+            p[k] = log_prior + log_like
 
         # Confirm that the model has run through the burn in phase
         if count > N_burn_in and isNotPrinted:
@@ -84,20 +84,27 @@ def plotMCMCModel(x, t, N, x_sin, y_sin):
             isNotPrinted = False
 
         # Eq. 11.33 - Use metropolis criterion to accept or reject weight pairs
-        u = np.random.uniform(0, 1)
-        prob = p[1] / p[0]
-        A = min([1.0, prob])
-        if A > u: # Accept this point
+        prob = p[1] - p[0]
+        if prob >= 0: # Accept this point
             ax_loop.scatter(z[1][0], z[1][1], color = 'green', s=0.8) # plot z_star as success
+            # S = # divide by log of accepted values
             z[0] = z[1] # z_star assigned to z_prev
             z[1] = np.random.multivariate_normal(z[0], S) # draw another z_star value
-            if count > N_burn_in: # Start averaging values after burn in complete
-                z_avg_sum += z[0] # Sum the accepted z_star value
-                avg_count += 1
 
-        else: # Reject this point
-            ax_loop.scatter(z[1][0], z[1][1], color = 'red', s=0.8) # plot z_star as failure
-            z[1] = np.random.multivariate_normal(z[0], S) # try again with another data point
+        else:
+            u = np.random.uniform(0, 1)
+            exp_prob = np.exp(prob)
+            if u <= exp_prob: # Accept this point
+                ax_loop.scatter(z[1][0], z[1][1], color = 'green', s=0.8) # plot z_star as success
+                # S = # divide by log of accepted values
+                z[0] = z[1] # z_star assigned to z_prev
+                z[1] = np.random.multivariate_normal(z[0], S) # draw another z_star value
+                if count > N_burn_in: # Start averaging values after burn in complete
+                    z_avg_sum += z[0] # Sum the accepted z_star value
+                    avg_count += 1.0
+            else: # Reject this point
+                ax_loop.scatter(z[1][0], z[1][1], color = 'red', s=0.8) # plot z_star as failure
+                z[1] = np.random.multivariate_normal(z[0], S) # try again with another data point
 
     best_z = z_avg_sum / (avg_count)
 
